@@ -1,0 +1,32 @@
+<Window x:Class="Slacek.Client.Desktop.CreateOrJoinGroupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Slacek.Client.Desktop"
+        d:DataContext="{d:DesignInstance Type=local:CreateOrJoinGroupWindowViewModel}"
+        mc:Ignorable="d"
+        Title="Eksplorator grup" Height="250" Width="400" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow">
+    <Grid Background="white">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10">
+            <TextBlock Text="Stwórz nową grupę" HorizontalAlignment="Center" FontSize="16" Margin="10" />
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="5">
+                <Label Target="{Binding ElementName=TextBoxCreateName}" HorizontalAlignment="Left">_Nazwa</Label>
+                <TextBox Name="TextBoxCreateName" Text="{Binding CreateGroupName, UpdateSourceTrigger=PropertyChanged}" Width="140" Height="20" />
+            </StackPanel>
+            <Button Content="Stwórz" Width="80" Height="20" Margin="5" Command="{Binding CreateGroupCommand}" HorizontalAlignment="Center" IsEnabled="{Binding CanCreateGroup}" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10">
+            <TextBlock Text="Dołącz do grupy" HorizontalAlignment="Center" FontSize="16" Margin="10" />
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="5">
+                <Label Target="{Binding ElementName=TextBoxJoinName}" HorizontalAlignment="Left">_Nazwa</Label>
+                <TextBox Name="TextBoxJoinName" Text="{Binding JoinGroupName, UpdateSourceTrigger=PropertyChanged}" Width="140" Height="20" />
+            </StackPanel>
+            <Button Content="Dołącz" Width="80" Height="20" Margin="5" Command="{Binding JoinGroupCommand}" HorizontalAlignment="Center" IsEnabled="{Binding CanJoinGroup}" />
+        </StackPanel>
+    </Grid>
+</Window>

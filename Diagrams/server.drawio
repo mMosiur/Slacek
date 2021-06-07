@@ -1,0 +1,158 @@
+<mxfile>
+    <diagram id="bgaUhcgl6Ks4pTeGLNoc" name="Diagram">
+        <mxGraphModel dx="648" dy="575" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="13" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;sketch=1;" parent="1" source="9" target="11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;sketch=1;" parent="1" source="9" target="11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;sketch=1;" parent="1" source="9" target="11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;sketch=1;" parent="1" source="9" target="11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;sketch=1;" parent="1" source="9" target="11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;ServerManager&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Listen on main socket&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Accept incoming connections&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Run &lt;b&gt;&lt;u&gt;ConnectionService&lt;/u&gt;&lt;/b&gt; for each client in a seperate thread&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Distribute notifications from inside one connection to other connections&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;glass=0;shadow=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="40" width="180" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="9" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="18" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;sketch=1;" parent="1" source="11" target="16" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="330" y="345"/>
+                            <mxPoint x="330" y="345"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="49" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;sketch=1;" parent="1" source="11" target="47" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="56" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;sketch=1;" parent="1" source="11" target="54" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;ConnectionService&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Keeps a &lt;b&gt;&lt;u&gt;ConnectionTunel&lt;/u&gt;&lt;/b&gt; to a specific client&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- While this tunnel is open and live continuously reads received commands from client&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Decodes the command and runs given command handler&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Command handlers perform specific action with &lt;b&gt;&lt;u&gt;DatabaseManager&lt;/u&gt;&lt;/b&gt; and send the result back to client&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- &lt;b&gt;&lt;u&gt;Models&lt;/u&gt;&lt;/b&gt; that are being sent back are serialized using adequate &lt;b&gt;&lt;u&gt;Serializers&lt;/u&gt;&lt;/b&gt;&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Exposed public methods to notify client this connection of actions of other connections (eg. new message) from the outside&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="240" width="300" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="11" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="22" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;sketch=1;" parent="1" source="16" target="20" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;DatabaseManager&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Exposed public methods to perform specific tasks in the database&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Encapsulates working directly in &lt;b&gt;&lt;u&gt;DatabaseContext&lt;/u&gt;&lt;/b&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="370" y="280" width="170" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="16" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="37" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;sketch=1;" parent="1" source="20" target="33" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="53" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;sketch=1;" parent="1" source="20" target="52" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;DatabaseContext&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Uses &lt;i&gt;Entity Framework Core&lt;/i&gt; to connect and operate on underlying &lt;i&gt;database&lt;/i&gt;&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="570" y="295" width="170" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="20" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="23" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;User&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;Data type that represents User info&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="342" y="60" width="110" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="23" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="25" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;Group&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;Data type that represents Group info&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="60" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="25" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="27" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERmany;startArrow=ERmany;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;sketch=1;" parent="1" source="23" target="25" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="488" y="100" as="sourcePoint"/>
+                        <mxPoint x="528" y="170" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="28" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;Message&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;Data type that represents Message info&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="469" y="160" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="28" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="30" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;sketch=1;" parent="1" source="23" target="28" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="378" y="170" as="sourcePoint"/>
+                        <mxPoint x="439" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="31" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;sketch=1;" parent="1" source="25" target="28" edge="1">
+                    <mxGeometry width="100" height="100" relative="1" as="geometry">
+                        <mxPoint x="608" y="260" as="sourcePoint"/>
+                        <mxPoint x="708" y="160" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="33" value="&lt;b&gt;Models&lt;/b&gt;" style="shape=umlFrame;whiteSpace=wrap;html=1;shadow=0;glass=0;labelBackgroundColor=none;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="20" width="410" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="47" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;&amp;lt;&amp;lt;Serializers&amp;gt;&amp;gt; (generalization)&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- A set of classes capable of serializing and deserializing any of the Models and collections of Models&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Use &lt;i&gt;BinaryWriter&lt;/i&gt; and &lt;i&gt;BinaryReader&lt;/i&gt; to write object to binary and then encode/decode binary representation to/from &lt;i&gt;Base64&lt;/i&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;labelBackgroundColor=none;whiteSpace=wrap;fontFamily=Helvetica;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="370" y="430" width="270" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="48" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="47" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="52" value="Database" style="shape=datastore;whiteSpace=wrap;html=1;shadow=0;glass=0;labelBackgroundColor=none;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="410" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="59" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;sketch=1;" parent="1" source="54" target="57" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="54" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;ConnectionTunnel&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Encapsulates bare &lt;i&gt;Socket&lt;/i&gt;&amp;nbsp;connected to client&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Doesn't allow communication until the tunnel has been opened&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Opening tunnel consists of a cryptographic exchange supported by &lt;b&gt;&lt;u&gt;CryptographicServices&lt;/u&gt;&lt;/b&gt; that finishes with both server and client having the same symmetric key&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- All later communication is being encrypted by sender and decrypter by receiver with that symmetric key&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- For each message the sender first sends the number of bytes the encrypted message has, and then sends the encrypted message itself&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="510" width="300" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="55" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="54" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="57" value="&lt;p style=&quot;margin: 0px ; margin-top: 6px ; text-align: center&quot;&gt;&lt;b&gt;&amp;lt;&amp;lt;CryptographicServices&amp;gt;&amp;gt; (generalization)&lt;/b&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- A set of classes capable of encrypting and decrypting data&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Both asymmetric and symmetric cryptographical service is provided&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;- Utilize built in&amp;nbsp;&lt;i&gt;RSACryptoServiceProvider&lt;/i&gt; (asymmetric) and &lt;i&gt;Aes&lt;/i&gt; (symmetric)&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;shadow=0;glass=0;labelBackgroundColor=none;whiteSpace=wrap;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="370" y="580" width="310" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="58" value="" style="shape=component;jettyWidth=8;jettyHeight=4;sketch=1;" parent="57" vertex="1">
+                    <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-24" y="4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="W6fIEdw_na3CiRxA3SF--59" value="&lt;b&gt;Server&lt;/b&gt;" style="shape=umlFrame;whiteSpace=wrap;html=1;shadow=0;glass=0;labelBackgroundColor=none;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry width="760" height="750" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

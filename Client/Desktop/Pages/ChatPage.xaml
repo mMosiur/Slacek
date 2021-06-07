@@ -1,0 +1,47 @@
+<local:BasePage x:TypeArguments="local:ChatPageViewModel" x:Class="Slacek.Client.Desktop.ChatPage"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                xmlns:local="clr-namespace:Slacek.Client.Desktop" d:DataContext="{d:DesignInstance Type=local:ChatPageViewModel}"
+                mc:Ignorable="d"
+                d:DesignHeight="450" d:DesignWidth="800"
+                Title="ChatPage">
+    <Page.Resources>
+        <local:BooleanToVisibilityValueConverter x:Key="BooleanToVisibilityValueConverter" />
+    </Page.Resources>
+    <Grid d:Background="White">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition MinWidth="150" Width="200" MaxWidth="400" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="50" />
+        </Grid.RowDefinitions>
+        <GridSplitter Grid.Column="0" Width="4" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Stretch" />
+        <DockPanel Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" LastChildFill="True">
+            <TextBlock Text="Grupa" DockPanel.Dock="Top" />
+            <Button Content="Inne grupy" DockPanel.Dock="Bottom" Margin="15 5 15 5" Command="{Binding SeeOtherGroups}" />
+            <ListBox ItemsSource="{Binding Groups}" SelectionMode="Single" SelectedItem="{Binding SelectedGroup, Mode=OneWayToSource}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+        <ListView Grid.Column="1" Grid.Row="0" ItemsSource="{Binding MessagesInGroup}" Visibility="{Binding IsGroupSelected, Converter={StaticResource BooleanToVisibilityValueConverter}}">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Sender" DisplayMemberBinding="{Binding User.Username}" />
+                    <GridViewColumn Header="Content" DisplayMemberBinding="{Binding Content}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <DockPanel Grid.Column="1" Grid.Row="1" LastChildFill="True" Visibility="{Binding IsGroupSelected, Converter={StaticResource BooleanToVisibilityValueConverter}}">
+            <Button DockPanel.Dock="Right" MinWidth="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Content="Wyślij" Command="{Binding SendMessageCommand}" />
+            <TextBox Text="{Binding NewMessageContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" KeyDown="TextBox_KeyDown" />
+        </DockPanel>
+    </Grid>
+</local:BasePage>
