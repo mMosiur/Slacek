@@ -84,14 +84,6 @@ namespace Slacek.Client.Core
             return true;
         }
 
-        public void Wait(int milliseconds)
-        {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            while (!Available && stopwatch.ElapsedMilliseconds < milliseconds) { }
-            return;
-        }
-
         public bool Send(string message)
         {
             if (!IsOpen)
@@ -105,18 +97,6 @@ namespace Slacek.Client.Core
         }
 
         public string Receive()
-        {
-            byte[] data = ReceiveEncrypted();
-            return cryptographyService.DecryptToString(data);
-        }
-
-        public byte[] ReceiveBytes()
-        {
-            byte[] data = ReceiveEncrypted();
-            return cryptographyService.Decrypt(data);
-        }
-
-        public byte[] ReceiveEncrypted()
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -138,7 +118,7 @@ namespace Slacek.Client.Core
             {
                 throw new Exception($"Received {received} bytes instead of {length}");
             }
-            return buffer;
+            return cryptographyService.DecryptToString(buffer);
         }
 
         public void Dispose()

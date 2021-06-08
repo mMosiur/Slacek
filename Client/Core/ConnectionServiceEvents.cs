@@ -8,7 +8,10 @@ namespace Slacek.Client.Core
     {
         public Message Message { get; }
 
-        public NewMessageReceivedEventArgs(Message message) => Message = message;
+        public NewMessageReceivedEventArgs(Message message)
+        {
+            Message = message;
+        }
     }
 
     public class NewUserInGroupReceivedEventArgs : EventArgs
@@ -28,7 +31,10 @@ namespace Slacek.Client.Core
         public bool Successful => !(User is null);
         public User User { get; }
 
-        public UserAuthenticationEventArgs(User user) => User = user;
+        public UserAuthenticationEventArgs(User user)
+        {
+            User = user;
+        }
 
         public static UserAuthenticationEventArgs Failed { get; } = new UserAuthenticationEventArgs(null);
     }
@@ -38,7 +44,10 @@ namespace Slacek.Client.Core
         public bool Successful => !(User is null);
         public User User { get; }
 
-        public UserRegistrationEventArgs(User user) => User = user;
+        public UserRegistrationEventArgs(User user)
+        {
+            User = user;
+        }
 
         public static UserRegistrationEventArgs Failed { get; } = new UserRegistrationEventArgs(null);
     }
@@ -48,7 +57,10 @@ namespace Slacek.Client.Core
         public bool Successful => !(Groups is null);
         public ICollection<Group> Groups { get; }
 
-        public GetGroupsReceivedEventArgs(ICollection<Group> groups) => Groups = groups;
+        public GetGroupsReceivedEventArgs(ICollection<Group> groups)
+        {
+            Groups = groups;
+        }
 
         public static GetGroupsReceivedEventArgs Failed { get; } = new GetGroupsReceivedEventArgs(null);
     }

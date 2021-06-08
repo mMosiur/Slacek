@@ -108,7 +108,6 @@ namespace Slacek.Server
                 throw new Exception(errorMsg);
             }
             _logger.LogInformation("New user registration was successful");
-            Thread.CurrentThread.Name = _authenticatedUser?.Login;
             ISerializer<User> serializer = new UserSerializer();
             string payload = serializer.Serialize(_authenticatedUser);
             _tunnel.Send($"{command[0]} ok {payload}");
@@ -380,7 +379,7 @@ namespace Slacek.Server
                         _tunnel.Send($"{command[0]} err");
                     }
                 }
-                Thread.Sleep(1000);
+                Thread.Sleep(100);
             }
         }
 

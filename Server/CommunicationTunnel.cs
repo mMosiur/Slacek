@@ -1,5 +1,6 @@
 using Slacek.Cryptography;
 using System;
+using System.Diagnostics;
 using System.Net.Sockets;
 
 namespace Slacek.Server
@@ -103,22 +104,11 @@ namespace Slacek.Server
 
         public bool Send(string message)
         {
-            byte[] data = cryptographyService.Encrypt(message);
-            return SendEncrypted(data);
-        }
-
-        public bool SendBytes(byte[] bytes)
-        {
-            byte[] data = cryptographyService.Encrypt(bytes);
-            return SendEncrypted(data);
-        }
-
-        private bool SendEncrypted(byte[] data)
-        {
             if (!IsOpen)
             {
                 return false;
             }
+            byte[] data = cryptographyService.Encrypt(message);
             _socket.Send(BitConverter.GetBytes(data.Length));
             _socket.Send(data);
             return true;
@@ -126,18 +116,9 @@ namespace Slacek.Server
 
         public string Receive()
         {
-            byte[] data = ReceiveEncrypted();
-            return cryptographyService.DecryptToString(data);
-        }
-
-        public byte[] ReceiveBytes()
-        {
-            byte[] data = ReceiveEncrypted();
-            return cryptographyService.Decrypt(data);
-        }
-
-        private byte[] ReceiveEncrypted()
-        {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            while (!Available && stopwatch.ElapsedMilliseconds < 2000) { }
             if (!Available)
             {
                 return null;
@@ -155,7 +136,7 @@ namespace Slacek.Server
             {
                 throw new Exception($"Received {received} bytes instead of {length}");
             }
-            return buffer;
+            return cryptographyService.DecryptToString(buffer);
         }
 
         public void Dispose()
