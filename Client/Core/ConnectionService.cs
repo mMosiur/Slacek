@@ -113,6 +113,13 @@ namespace Slacek.Client.Core
             OnNewGroupReceived(new NewGroupReceivedEventArgs(group));
         }
 
+        private void HandleJoinGroup(string[] command)
+        {
+            ISerializer<Group> serializer = new GroupSerializer();
+            Group group = serializer.Deserialize(command[2]);
+            OnNewGroupReceived(new NewGroupReceivedEventArgs(group));
+        }
+
         private void HandleNew(string resource, string[] command)
         {
             switch (resource)
@@ -275,6 +282,10 @@ namespace Slacek.Client.Core
                     HandleGetReply(reply[1], reply);
                     break;
 
+                case "join":
+                    HandleJoinGroup(reply);
+                    break;
+
                 default:
                     throw new Exception($"Unrecognized command \"{reply[0]}\"");
             }
@@ -304,6 +315,12 @@ namespace Slacek.Client.Core
         {
             EnqueueRequest(CommandType.Authenticate);
             _tunnel?.Send($"authenticate {login} {password}");
+        }
+
+        public void Unauthenticate()
+        {
+            _tunnel?.Send("unauthenticate");
+            AuthenticatedUser = null;
         }
 
         public void Register(string login, string username, string password)
@@ -342,6 +359,18 @@ namespace Slacek.Client.Core
             byte[] bytes = Encoding.UTF8.GetBytes(name);
             string payload = Convert.ToBase64String(bytes);
             _tunnel?.Send($"new group {payload}");
+            return true;
+        }
+
+        public bool JoinGroup(string name)
+        {
+            if (!IsUserAuthenticated)
+            {
+                return false;
+            }
+            byte[] bytes = Encoding.UTF8.GetBytes(name);
+            string payload = Convert.ToBase64String(bytes);
+            _tunnel?.Send($"join {payload}");
             return true;
         }
 

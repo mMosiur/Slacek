@@ -148,6 +148,20 @@ namespace Slacek.Server
             _logger.LogInformation("Reply has been sent back");
         }
 
+        private void UnauthenticateCommand(string[] command)
+        {
+            const int expectedLength = 1;
+            _logger.LogInformation("Authenticate command requested");
+            if (command.Length != expectedLength)
+            {
+                string errorMsg = $"Received authenticate command is not in a proper format. Expected {expectedLength} parts, received {command.Length}.";
+                _logger.LogError(errorMsg);
+                throw new Exception(errorMsg);
+            }
+            _authenticatedUser = null;
+            _logger.LogInformation("User has been unauthenticated");
+        }
+
         private void NewCommand(string[] command)
         {
             switch (command[1])
@@ -160,6 +174,39 @@ namespace Slacek.Server
                     NewGroupCommand(command);
                     break;
             }
+        }
+
+        private void JoinCommand(string[] command)
+        {
+            const int expectedLength = 2;
+            _logger.LogInformation("Join command requested");
+            if (command.Length != expectedLength)
+            {
+                string errorMsg = $"Received Join command is not in a proper format. Expected {expectedLength} parts, received {command.Length}.";
+                _logger.LogError(errorMsg);
+            }
+            string preamble = $"{command[0]} {command[1]}";
+            if (_authenticatedUser is null)
+            {
+                _logger.LogError("Received Join command from an unauthenticated user");
+                _tunnel.Send($"{preamble} err");
+                return;
+            }
+
+            byte[] bytes = Convert.FromBase64String(command[1]);
+            string name = Encoding.UTF8.GetString(bytes);
+            Group group = _databaseManager.JoinGroup(_authenticatedUser.UserId, name);
+            if (group is null)
+            {
+                _logger.LogError($"Group with name \"{command[1]}\" could not be found");
+                _tunnel.Send($"{preamble} err");
+                return;
+            }
+            ISerializer<Group> serializer = new GroupSerializer();
+            string payload = serializer.Serialize(group);
+            _tunnel.Send($"{preamble} {payload}");
+            _logger.LogInformation("Reply has been sent back");
+            OnNewUserInGroup(new NewUserInGroupEventArgs(group.GroupId, _authenticatedUser));
         }
 
         private void NewMessageCommand(string[] command)
@@ -361,8 +408,16 @@ namespace Slacek.Server
                                 AuthenticateCommand(command);
                                 break;
 
+                            case "unauthenticate":
+                                UnauthenticateCommand(command);
+                                break;
+
                             case "new":
                                 NewCommand(command);
+                                break;
+
+                            case "join":
+                                JoinCommand(command);
                                 break;
 
                             case "get":

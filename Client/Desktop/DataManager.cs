@@ -141,6 +141,14 @@ namespace Slacek.Client.Desktop
             return sent;
         }
 
+        public void Logout()
+        {
+            _connectionService.Unauthenticate();
+            Users.Clear();
+            Groups.Clear();
+            Messages.Clear();
+        }
+
         public void GetGroups()
         {
             _connectionService.GetGroups();

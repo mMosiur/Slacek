@@ -28,7 +28,7 @@ namespace Slacek.Client.Desktop
         {
 
             _connectionService = connectionService;
-            CreateGroupCommand = new RelayCommand<Window>(window =>
+            CreateGroupCommand = new RelayCommand(() =>
             {
                 App.Current.Dispatcher.Invoke(delegate
                 {
@@ -37,6 +37,21 @@ namespace Slacek.Client.Desktop
                     void handler(object sender, NewGroupReceivedEventArgs e)
                     {
                         MessageBox.Show("Nowa grupa została utworzona");
+                        WaitingForReply = false;
+                        _connectionService.NewGroupReceived -= handler;
+                    }
+                    _connectionService.NewGroupReceived += handler;
+                });
+            });
+            JoinGroupCommand = new RelayCommand(() =>
+            {
+                App.Current.Dispatcher.Invoke(delegate
+                {
+                    _connectionService.JoinGroup(JoinGroupName);
+                    WaitingForReply = true;
+                    void handler(object sender, NewGroupReceivedEventArgs e)
+                    {
+                        MessageBox.Show("Dołączono do grupy");
                         WaitingForReply = false;
                         _connectionService.NewGroupReceived -= handler;
                     }

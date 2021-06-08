@@ -13,6 +13,8 @@ namespace Slacek.Client.Desktop
 
         public User LoggedInUser => _dataManager.LoggedInUser;
 
+        public string Username => LoggedInUser?.Username;
+
         public ObservableCollection<Group> Groups => _dataManager.Groups;
 
         public ObservableCollection<Message> MessagesInGroup => SelectedGroup is null ? null : _dataManager.Messages[SelectedGroup.GroupId];
@@ -34,6 +36,8 @@ namespace Slacek.Client.Desktop
         public ICommand SendMessageCommand { get; }
 
         public ICommand SeeOtherGroups { get; }
+
+        public ICommand Logout { get; }
 
         public string NewMessageContent { get; set; }
 
@@ -57,6 +61,11 @@ namespace Slacek.Client.Desktop
                     ShowInTaskbar = false
                 };
                 _ = window.ShowDialog();
+            });
+            Logout = new RelayCommand(() =>
+            {
+                _dataManager.Logout();
+                ServiceProvider.GetRequiredService<MainWindowViewModel>().CurrentPage = ApplicationPage.Login;
             });
             try
             {
