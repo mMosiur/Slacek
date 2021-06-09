@@ -13,11 +13,9 @@ namespace Slacek.Client.Desktop
         public bool IsLoginFocused { get; set; }
         public bool IsRegisterFocused { get; set; }
         public string LoginLogin { get; set; }
-        public string LoginPassword { get; set; }
         public string LoginMessage { get; private set; }
         public string RegisterLogin { get; set; }
         public string RegisterUsername { get; set; }
-        public string RegisterPassword { get; set; }
         public string RegisterMessage { get; private set; }
         public ICommand LoginCommand { get; }
         public ICommand RegisterCommand { get; }
@@ -26,20 +24,20 @@ namespace Slacek.Client.Desktop
         {
             _connectionService = connectionService;
             _dataManager = dataManager;
-            LoginCommand = new RelayCommand(() =>
+            LoginCommand = new RelayCommand<System.Windows.Controls.PasswordBox>(passwordBox =>
             {
                 if (Authenticating) return;
                 LoginMessage = "Logowanie...";
                 _connectionService.UserAuthentication += ConnectionManager_UserAuthentication;
-                _connectionService.Authenticate(LoginLogin, LoginPassword);
+                _connectionService.Authenticate(LoginLogin, passwordBox.Password);
                 Authenticating = true;
             });
-            RegisterCommand = new RelayCommand(() =>
+            RegisterCommand = new RelayCommand<System.Windows.Controls.PasswordBox>(passwordBox =>
             {
                 if (Authenticating) return;
                 RegisterMessage = "Rejestrowanie...";
                 _connectionService.UserRegistration += ConnectionManager_UserRegistration;
-                _connectionService.Register(RegisterLogin, RegisterUsername, RegisterPassword);
+                _connectionService.Register(RegisterLogin, RegisterUsername, passwordBox.Password);
                 Authenticating = true;
             });
         }

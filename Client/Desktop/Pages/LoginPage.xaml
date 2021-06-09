@@ -24,10 +24,10 @@
                 <TextBox Name="TextBoxLoginLogin" Text="{Binding LoginLogin}" Width="140" Height="20" />
             </StackPanel>
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="10">
-                <Label Target="{Binding ElementName=TextBoxLoginPassword}" HorizontalAlignment="Left">_Hasło</Label>
-                <TextBox Name="TextBoxLoginPassword" Text="{Binding LoginPassword}" Width="140" Height="20" />
+                <Label Target="{Binding ElementName=PasswordBoxLogin}" HorizontalAlignment="Left">_Hasło</Label>
+                <PasswordBox x:Name="PasswordBoxLogin" Width="140" Height="20"/>
             </StackPanel>
-            <Button Content="Zaloguj" Width="80" Height="20" Margin="10" Command="{Binding LoginCommand}" HorizontalAlignment="Center" IsEnabled="{Binding CanLogin}" />
+            <Button Content="Zaloguj" Width="80" Height="20" Margin="10" Click="LoginButton_Click" HorizontalAlignment="Center" IsEnabled="{Binding CanLogin}" />
             <TextBlock Text="{Binding LoginMessage}" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Margin="30">
@@ -41,10 +41,10 @@
                 <TextBox Name="TextBoxRegisterUsername" Text="{Binding RegisterUsername}" Width="140" Height="20" />
             </StackPanel>
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="10">
-                <Label Target="{Binding ElementName=TextBoxRegisterPassword}" HorizontalAlignment="Left">_Hasło</Label>
-                <TextBox Name="TextBoxRegisterPassword" Text="{Binding RegisterPassword}" Width="140" Height="20" />
+                <Label Target="{Binding ElementName=PasswordBoxRegister}" HorizontalAlignment="Left">_Hasło</Label>
+                <PasswordBox x:Name="PasswordBoxRegister" Width="140" Height="20" />
             </StackPanel>
-            <Button Content="Zarejestruj" Width="80" Height="20" Margin="10" Command="{Binding RegisterCommand}" HorizontalAlignment="Center" IsEnabled="{Binding CanRegister}" />
+            <Button Content="Zarejestruj" Width="80" Height="20" Margin="10" Click="RegisterButton_Click" HorizontalAlignment="Center" IsEnabled="{Binding CanRegister}" />
             <TextBlock Text="{Binding RegisterMessage}" HorizontalAlignment="Center" />
         </StackPanel>
     </Grid>

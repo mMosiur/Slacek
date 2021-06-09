@@ -9,5 +9,15 @@ namespace Slacek.Client.Desktop
         {
             InitializeComponent();
         }
+
+        private void LoginButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            ViewModel.LoginCommand.Execute(PasswordBoxLogin);
+        }
+
+        private void RegisterButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            ViewModel.RegisterCommand.Execute(PasswordBoxRegister);
+        }
     }
 }
