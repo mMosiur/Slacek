@@ -94,7 +94,10 @@ namespace Slacek.Server
             }
             try
             {
-                _authenticatedUser = _databaseManager.RegisterNewUser(command[1], command[2], command[3]);
+                string login = command[1];
+                string username = Encoding.UTF8.GetString(Convert.FromBase64String(command[2]));
+                string password = Encoding.UTF8.GetString(Convert.FromBase64String(command[3]));
+                _authenticatedUser = _databaseManager.RegisterNewUser(login, username, password);
             }
             catch (Exception e)
             {
@@ -127,7 +130,9 @@ namespace Slacek.Server
             }
             try
             {
-                _authenticatedUser = _databaseManager.AuthenticateUser(command[1], command[2]);
+                string login = command[1];
+                string password = Encoding.UTF8.GetString(Convert.FromBase64String(command[2]));
+                _authenticatedUser = _databaseManager.AuthenticateUser(login, password);
             }
             catch (Exception e)
             {

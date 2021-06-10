@@ -314,7 +314,8 @@ namespace Slacek.Client.Core
         public void Authenticate(string login, string password)
         {
             EnqueueRequest(CommandType.Authenticate);
-            _tunnel?.Send($"authenticate {login} {password}");
+            string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+            _tunnel?.Send($"authenticate {login} {encodedPassword}");
         }
 
         public void Unauthenticate()
@@ -326,7 +327,9 @@ namespace Slacek.Client.Core
         public void Register(string login, string username, string password)
         {
             EnqueueRequest(CommandType.Register);
-            _tunnel?.Send($"register {login} {username} {password}");
+            string encodedUsername = Convert.ToBase64String(Encoding.UTF8.GetBytes(username));
+            string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+            _tunnel?.Send($"register {login} {encodedUsername} {encodedPassword}");
         }
 
         public bool SendNewMessage(Message message)

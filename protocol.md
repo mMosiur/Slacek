@@ -20,12 +20,18 @@ Socket connection is automatic and encryption is applied from the very beginning
 
 ![Tunnel diagram](Diagrams/tunnel.png)
 
-## Serialization
+## Serialization and encoding
 
 All serialized object mentioned in the protocol are done so in given manner:
 
 The serialization is done by sequentially serializing basic data types using a [BinaryWriter](https://docs.microsoft.com/pl-pl/dotnet/api/system.io.binarywriter?view=netstandard-2.1).
 The bare binary data is then converted to base64 string with no newlines.
+
+Additionally some string are **encoded** so to not break with spaces inside them.
+The encoding (later called **string-encoding**):
+
+- `String` is converted to binary data through UTF-8 encoding.
+- binary data is then encoded to `String` using base 64 conversion
 
 ### User serialization
 
@@ -93,11 +99,11 @@ Both sides keep track of currently authenticated user in given session.
 
 Client sends:
 
-- `register <login> <username> <password>`
+- `register <login> <encoded_username> <encoded_password>` - where `<encoded_username>` is **string-encoded** username, and `<encoded_password>` is **string-encoded** password.
 
 Server replies:
 
-- `register ok <login> <username> <password>`
+- `register ok <serialized_user>` - where `<serialized_user>` is serialized authenticated user object.
 - `register err` - in case register command is not in proper format, registration was not successful or there is already user with given login or username.
 
 After registration new user is automatically authenticated.
@@ -106,11 +112,11 @@ After registration new user is automatically authenticated.
 
 Client sends:
 
-- `authenticate <login> <password>`
+- `authenticate <login> <encoded_password>` - where `<encoded_password>` is **string-encoded** password.
 
 Server replies:
 
-- `authenticate ok <payload>` - where payload is serialized authenticated user object.
+- `authenticate ok <serialized_user>` - where `<serialized_user>` is serialized authenticated user object.
 - `authenticate err` - in case command is not in proper format, authentication did not succeed or there was an database error.
 
 ### Unauthenticate command
@@ -141,7 +147,7 @@ Client sends:
 
 Server replies:
 
-- `get groups <payload>` - where `<payload>` is a serialized collection of groups currently authenticated user is a member of.
+- `get groups <serialized_groups>` - where `<serialized_groups>` is a serialized collection of groups currently authenticated user is a member of.
 - `get groups err` - when command is sent by an unauthenticated user.
 
 ### Get users command
@@ -152,7 +158,7 @@ Client sends:
 
 Server replies:
 
-- `get users <groupId> <payload>` - where `<payload>` is a serialized collection of users in group with given `<groupId>`.
+- `get users <groupId> <serialized_users>` - where `<serialized_users>` is a serialized collection of users in group with given `<groupId>`.
 - `get users <groupId> err` - in case if group with given `<groupId>` can't be found or the user is unauthenticated.
 
 ### Get messages command
@@ -163,7 +169,7 @@ Client sends:
 
 Server replies:
 
-- `get messages <groupId> <payload>` - where `<payload>` is a serialized collection of messages in group with given `<groupId>`.
+- `get messages <groupId> <serialized_messages>` - where `<serialized_messages>` is a serialized collection of messages in group with given `<groupId>`.
 - `get messages <groupId> err` - in case if group with given `<groupId>` can't be found or the user is unauthenticated.
 
 ## New commands (sending data)
@@ -179,7 +185,7 @@ Available `new` commands:
 
 Client sends:
 
-- `new message <groupId> <payload>` - where `<groupId`> is group identifier which is message destination, `<payload>` encoded message content (string ➡ UTF-8 binary encoding ➡ base 64 string).
+- `new message <groupId> <encoded_content>` - where `<groupId`> is group identifier which is message destination, `<encoded_content>` is **string-encoded** message content.
 
 Server does not reply to sender, but triggers `NewMessageEvent`, which then distributes this new message to all other connected clients in the group of this message.
 
@@ -187,11 +193,11 @@ Server does not reply to sender, but triggers `NewMessageEvent`, which then dist
 
 Client sends:
 
-- `new group <payload>` - where payload is encoded name of the new group (string ➡ UTF-8 binary encoding ➡ base 64 string).
+- `new group <encoded_name>` - where `<encoded_name>` is **string-encoded** name of the new group .
 
 Server replies:
 
-- `new group <payload>` - where `<payload>` is serialized created group object
+- `new group <serialized_group>` - where `<serialized_group>` is serialized created group object
 
 - `new err` - if creating group was not successful
 
@@ -205,12 +211,12 @@ When client wants to join an existing group, he sends this command.
 
 Client sends:
 
-- `join <payload>` - where `<payload>` is encoded name of the group to join (string ➡ UTF-8 binary encoding ➡ base 64 string).
+- `join <encoded_name>` - where `<encoded_name>` is **string-encoded** name of the group to join.
 
 Server replies:
 
-- `join <payload1> <payload2>` - where `<payload1>` is mirroring `<payload>` sent by client and `<payload2>` is serialized group which has been joined.
-- `join <payload> err` - where `payload` is mirroring `<payload>` sent by client, when the specified group does not exists or the user is unauthenticated.
+- `join <encoded_name> <serialized_group>` - where `<encoded_name>` is the **string-encoded** name of the group and `<serialized_group>` is serialized group which has been joined.
+- `join <encoded_name> err` - where `<encoded_name>` is the **string-encoded** name of the group, when the group does not exists or the user is unauthenticated.
 
 ## Server notifications
 
@@ -222,7 +228,7 @@ Server redistributes a received message to all other clients in message's group 
 
 Server sends:
 
-- `new message <payload>` - where `<payload>` is serialized message.
+- `new message <serialized_message>` - where `<serialized_message>` is serialized message.
 
 ### Server-side new user notification
 
@@ -230,4 +236,4 @@ Server notifies all users in a specific group when a new member joins that group
 
 Server sends:
 
-- `new user <groupId> <payload>` - where `<groupId>` is the ID of the group, to which a new user has joined in and `<payload>` is serialized user that has joined.
+- `new user <groupId> <serialized_user>` - where `<groupId>` is the ID of the group, to which a new user has joined in and `<serialized_user>` is serialized user that has joined.
