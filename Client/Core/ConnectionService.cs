@@ -10,17 +10,6 @@ namespace Slacek.Client.Core
 {
     public class ConnectionService : IDisposable
     {
-        private enum CommandType
-        {
-            Ping,
-            Register,
-            Authenticate,
-            GetGroups,
-            GetUsers,
-            GetMessages
-        }
-
-        private readonly Queue<CommandType> _unhandledRequests = new Queue<CommandType>(1);
         private readonly CommunicationTunnel _tunnel = null;
         private Thread _listeningThread = null;
         private bool _closeThread = false;
@@ -77,63 +66,47 @@ namespace Slacek.Client.Core
             }
         }
 
-        private void EnqueueRequest(CommandType commandType) => _unhandledRequests.Enqueue(commandType);
-
-        private void DequeueRequest(CommandType commandType)
-        {
-            if (_unhandledRequests.Count == 0 || _unhandledRequests.Peek() != commandType)
-            {
-                throw new Exception("Unexpected server reply");
-            }
-            _ = _unhandledRequests.Dequeue();
-        }
-
-        private void HandleNewMessage(string[] command)
+        private void HandleNewMessage(string serialized_message)
         {
             ISerializer<Message> serializer = new MessageSerializer();
-            Message newMessage = serializer.Deserialize(command[2]);
+            Message newMessage = serializer.Deserialize(serialized_message);
             OnNewMessageReceived(new NewMessageReceivedEventArgs(newMessage));
         }
 
-        private void HandleNewUser(string[] command)
+        private void HandleNewUser(string data)
         {
-            ISerializer<User> serializer = new UserSerializer();
-            if (!int.TryParse(command[2], out int groupId))
+            string[] parts = data.Split(' ');
+            if(parts.Length != 2) return;
+            if (!int.TryParse(parts[0], out int groupId))
             {
-                throw new Exception($"Could not parse group ID: \"{command[2]}\"");
+                throw new Exception($"Could not parse group ID: \"{parts[0]}\"");
             }
-            User user = serializer.Deserialize(command[3]);
+            ISerializer<User> serializer = new UserSerializer();
+            User user = serializer.Deserialize(parts[1]);
             OnNewUserInGroupReceived(new NewUserInGroupReceivedEventArgs(groupId, user));
         }
 
-        private void HandleNewGroup(string[] command)
+        private void HandleNewGroup(Headers headers)
         {
             ISerializer<Group> serializer = new GroupSerializer();
-            Group group = serializer.Deserialize(command[2]);
+            Group group = serializer.Deserialize(headers["group"]);
             OnNewGroupReceived(new NewGroupReceivedEventArgs(group));
         }
 
-        private void HandleJoinGroup(string[] command)
+        private void HandleJoinGroup(Headers headers)
         {
             ISerializer<Group> serializer = new GroupSerializer();
-            Group group = serializer.Deserialize(command[2]);
+            Group group = serializer.Deserialize(headers["group"]);
             OnNewGroupReceived(new NewGroupReceivedEventArgs(group));
         }
 
-        private void HandleNew(string resource, string[] command)
+        private void HandleNew(Headers headers)
         {
+            string resource = headers["resource"];
             switch (resource)
             {
-                case "message":
-                    HandleNewMessage(command);
-                    break;
-
-                case "user":
-                    HandleNewUser(command);
-                    break;
-
                 case "group":
-                    HandleNewGroup(command);
+                    HandleNewGroup(headers);
                     break;
 
                 default:
@@ -141,20 +114,19 @@ namespace Slacek.Client.Core
             }
         }
 
-        private void HandlePingReply(string payload)
+        private void HandlePingReply(Headers headers)
         {
-            DequeueRequest(CommandType.Ping);
-            Console.WriteLine($"pong {payload}");
+            String response = headers["command"];
+            Console.WriteLine($"pong {response}");
         }
 
-        private void HandleAuthenticateReply(string status, string payload)
+        private void HandleAuthenticateReply(Headers headers)
         {
-            DequeueRequest(CommandType.Authenticate);
-            switch (status)
+            switch (headers.StatusCode)
             {
                 case "ok":
                     ISerializer<User> serializer = new UserSerializer();
-                    User user = serializer.Deserialize(payload);
+                    User user = serializer.Deserialize(headers["payload"]);
                     AuthenticatedUser = user;
                     OnUserAuthentication(new UserAuthenticationEventArgs(user));
                     break;
@@ -165,92 +137,91 @@ namespace Slacek.Client.Core
                     break;
 
                 default:
-                    throw new Exception($"Unexpected server reply status: \"{status}\"");
+                    throw new Exception($"Unexpected server reply status: \"{headers.StatusCode}\"");
             }
         }
 
-        private void HandleRegisterReply(string status, string payload)
+        private void HandleRegisterReply(Headers header)
         {
-            DequeueRequest(CommandType.Register);
-            if (status == "ok")
+            if (header.StatusCode == "ok")
             {
                 ISerializer<User> serializer = new UserSerializer();
-                User user = serializer.Deserialize(payload);
+                User user = serializer.Deserialize(header["payload"]);
                 AuthenticatedUser = user;
                 OnUserRegistration(new UserRegistrationEventArgs(user));
             }
-            else if (status == "err")
+            else if (header.StatusCode == "err")
             {
                 AuthenticatedUser = null;
                 OnUserRegistration(UserRegistrationEventArgs.Failed);
             }
             else
             {
-                throw new Exception($"Unexpected server reply status: \"{status}\"");
+                throw new Exception($"Unexpected server reply status: \"{header.StatusCode}\"");
             }
         }
 
-        private void HandleGetGroups(string payload)
+        private void HandleGetGroups(Headers headers)
         {
-            DequeueRequest(CommandType.GetGroups);
-            if (payload == "err")
+            if (headers["payload"] == "err")
             {
                 OnGetGroupsReceived(GetGroupsReceivedEventArgs.Failed);
                 return;
             }
             ISerializer<ICollection<Group>> serializer = new CollectionSerializer<Group>();
-            ICollection<Group> groups = serializer.Deserialize(payload);
+            ICollection<Group> groups = serializer.Deserialize(headers["payload"]);
             OnGetGroupsReceived(new GetGroupsReceivedEventArgs(groups));
         }
 
-        private void HandleGetUsers(string groupIdStr, string payload)
+        private void HandleGetUsers(Headers headers)
         {
-            DequeueRequest(CommandType.GetUsers);
-            if (!int.TryParse(groupIdStr, out int groupId))
+            string rawGroupId = headers["group-id"];
+            if (!int.TryParse(headers["group-id"], out int groupId))
             {
-                throw new Exception($"Could not parse group ID: \"{groupIdStr}\"");
+                throw new Exception($"Could not parse group ID: \"{rawGroupId}\"");
             }
-            if (payload == "err")
+            if (headers["payload"] == "err")
             {
                 OnGetUsersReceived(GetUsersReceivedEventArgs.Failed(groupId));
                 return;
             }
             ISerializer<ICollection<User>> serializer = new CollectionSerializer<User>();
-            ICollection<User> users = serializer.Deserialize(payload);
+            ICollection<User> users = serializer.Deserialize(headers["payload"]);
             OnGetUsersReceived(new GetUsersReceivedEventArgs(groupId, users));
         }
 
-        private void HandleGetMessages(string groupIdStr, string payload)
+        private void HandleGetMessages(Headers headers)
         {
-            DequeueRequest(CommandType.GetMessages);
-            if (!int.TryParse(groupIdStr, out int groupId))
+            string rawGroupId = headers["group-id"];
+            if (!int.TryParse(headers["group-id"], out int groupId))
             {
-                throw new Exception($"Could not parse group ID: \"{groupIdStr}\"");
+                throw new Exception($"Could not parse group ID: \"{rawGroupId}\"");
             }
-            if (payload == "err")
+            if (headers["payload"] == "err")
             {
                 OnGetMessagesReceived(GetMessagesReceivedEventArgs.Failed(groupId));
                 return;
             }
             ISerializer<ICollection<Message>> serializer = new CollectionSerializer<Message>();
-            ICollection<Message> messages = serializer.Deserialize(payload);
+            ICollection<Message> messages = serializer.Deserialize(headers["payload"]);
             OnGetMessagesReceived(new GetMessagesReceivedEventArgs(groupId, messages));
         }
 
-        private void HandleGetReply(string resource, string[] reply)
+        private void HandleGetReply(Headers headers)
         {
+            string resource = headers["resource"];
             switch (resource)
             {
                 case "groups":
-                    HandleGetGroups(reply[2]);
+                    HandleGetGroups(headers);
                     break;
 
                 case "users":
-                    HandleGetUsers(reply[2], reply[3]);
+                    HandleGetUsers(headers);
                     break;
 
                 case "messages":
-                    HandleGetMessages(reply[2], reply[3]);
+                    HandleGetMessages(headers);
                     break;
 
                 default:
@@ -258,36 +229,36 @@ namespace Slacek.Client.Core
             }
         }
 
-        private void HandleReply(string[] reply)
+        private void HandleReply(Headers headers)
         {
-            switch (reply[0])
+            switch (headers.Method)
             {
                 case "pong":
-                    HandlePingReply(reply[1]);
+                    HandlePingReply(headers);
                     break;
 
                 case "new":
-                    HandleNew(reply[1], reply);
+                    HandleNew(headers);
                     break;
 
                 case "authenticate":
-                    HandleAuthenticateReply(reply[1], reply.Length > 2 ? reply[2] : null);
+                    HandleAuthenticateReply(headers);
                     break;
 
                 case "register":
-                    HandleRegisterReply(reply[1], reply.Length > 2 ? reply[2] : null);
+                    HandleRegisterReply(headers);
                     break;
 
                 case "get":
-                    HandleGetReply(reply[1], reply);
+                    HandleGetReply(headers);
                     break;
 
                 case "join":
-                    HandleJoinGroup(reply);
+                    HandleJoinGroup(headers);
                     break;
 
                 default:
-                    throw new Exception($"Unrecognized command \"{reply[0]}\"");
+                    throw new Exception($"Unrecognized command \"{headers.Method}\"");
             }
         }
 
@@ -298,8 +269,56 @@ namespace Slacek.Client.Core
                 return;
             }
             string message = _tunnel.Receive();
-            string[] reply = message.Split(' ');
-            HandleReply(reply);
+            if(message == "alert")
+            {
+                HandleAlert();
+            }
+            else
+            {
+                Headers headers = Headers.Parse(message);
+                HandleReply(headers);
+            }
+        }
+
+        public void HandleAlert()
+        {
+            const int millisecondsWaitTime = 1000;
+            _tunnel?.Send("listening");
+            if(!_tunnel?.Wait(millisecondsWaitTime) ?? false) return;
+            string message = _tunnel?.Receive() ?? "";
+            string[] messageLines = message.Split(' ');
+            if(messageLines.Length != 2)
+            {
+                _tunnel?.Send("reject");
+                return;
+            }
+            if(messageLines[0] == "new")
+            {
+                if(messageLines[1] == "message")
+                {
+                    _tunnel?.Send("accept");
+                    if(!_tunnel?.Wait(millisecondsWaitTime) ?? false) return;
+                    string messageSerialized = _tunnel?.Receive() ?? "";
+                    HandleNewMessage(messageSerialized);
+                    _tunnel?.Send("ok");
+                }
+                else if(messageLines[1] == "user")
+                {
+                    _tunnel?.Send("accept");
+                    if(!_tunnel?.Wait(millisecondsWaitTime) ?? false) return;
+                    string reply = _tunnel?.Receive();
+                    HandleNewUser(reply);
+                    _tunnel?.Send("ok");
+                }
+                else
+                {
+                    _tunnel?.Send("reject");
+                }
+            }
+            else
+            {
+                _tunnel?.Send("reject");
+            }
         }
 
         private void Listen()
@@ -313,7 +332,6 @@ namespace Slacek.Client.Core
 
         public void Authenticate(string login, string password)
         {
-            EnqueueRequest(CommandType.Authenticate);
             string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
             _tunnel?.Send($"authenticate {login} {encodedPassword}");
         }
@@ -326,7 +344,6 @@ namespace Slacek.Client.Core
 
         public void Register(string login, string username, string password)
         {
-            EnqueueRequest(CommandType.Register);
             string encodedUsername = Convert.ToBase64String(Encoding.UTF8.GetBytes(username));
             string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
             _tunnel?.Send($"register {login} {encodedUsername} {encodedPassword}");
@@ -379,7 +396,6 @@ namespace Slacek.Client.Core
 
         public void Ping(string message = null)
         {
-            EnqueueRequest(CommandType.Ping);
             if (message is null)
             {
                 _tunnel?.Send("ping");
@@ -392,19 +408,16 @@ namespace Slacek.Client.Core
 
         public void GetGroups()
         {
-            EnqueueRequest(CommandType.GetGroups);
             _tunnel?.Send($"get groups");
         }
 
         public void GetUsers(int groupId)
         {
-            EnqueueRequest(CommandType.GetUsers);
             _tunnel?.Send($"get users {groupId}");
         }
 
         public void GetMessages(int groupId)
         {
-            EnqueueRequest(CommandType.GetMessages);
             _tunnel?.Send($"get messages {groupId}");
         }
 

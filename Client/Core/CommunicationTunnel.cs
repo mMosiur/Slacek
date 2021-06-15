@@ -126,5 +126,13 @@ namespace Slacek.Client.Core
             _socket.Dispose();
             GC.SuppressFinalize(this);
         }
+
+        public bool Wait(int milliseconds)
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            while (!Available && stopwatch.ElapsedMilliseconds < milliseconds) { }
+            return Available;
+        }
     }
 }

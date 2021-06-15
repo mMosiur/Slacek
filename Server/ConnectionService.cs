@@ -49,22 +49,52 @@ namespace Slacek.Server
 
         protected virtual void OnNewUserInGroup(NewUserInGroupEventArgs e) => NewUserInGroup?.Invoke(this, e);
 
+        private bool SendDialogMessage(string resource, string payload)
+        {
+            const int millisecondsWaitTime = 1000;
+            _tunnel.Send("alert");
+            _logger.LogInformation("Alert sent to client");
+            if(!_tunnel.Wait(millisecondsWaitTime)) return false;
+            string reply = _tunnel.Receive();
+            if(reply != "listening") return false;
+            _tunnel.Send(resource);
+            if(!_tunnel.Wait(millisecondsWaitTime)) return false;
+            reply = _tunnel.Receive();
+            if(reply != "accept") return false;
+            _tunnel.Send($"{payload}");
+            if(!_tunnel.Wait(millisecondsWaitTime)) return false;
+            reply = _tunnel.Receive();
+            return reply == "ok";
+        }
+
         public void ExternalNewMessage(Message message)
         {
-            _logger.LogInformation("External message invoked");
-            _logger.LogInformation("Sending external message");
+            string resource = "new message";
             ISerializer<Message> serializer = new MessageSerializer();
             string payload = serializer.Serialize(message);
-            _tunnel.Send($"new message {payload}");
+            if(SendDialogMessage(resource, payload))
+            {
+                _logger.LogInformation("Notification about new message sent");
+            }
+            else
+            {
+                _logger.LogError("An error occurred during in new message notification");
+            }
         }
 
         public void ExternalNewUserInGroup(int groupId, User user)
         {
-            _logger.LogInformation("External user in group invoked");
-            _logger.LogInformation("Sending external user in group");
+            string resource = "new user";
             ISerializer<User> serializer = new UserSerializer();
-            string payload = serializer.Serialize(user);
-            _tunnel.Send($"new user {groupId} {payload}");
+            string payload = $"{groupId} {serializer.Serialize(user)}";
+            if(SendDialogMessage(resource, payload))
+            {
+                _logger.LogInformation("Notification about new user sent");
+            }
+            else
+            {
+                _logger.LogError("An error occurred during in new user notification");
+            }
         }
 
         public ConnectionService(CommunicationTunnel tunnel, DatabaseManager databaseManager, ILogger logger)
@@ -78,7 +108,11 @@ namespace Slacek.Server
         private void PingCommand(string[] command)
         {
             _logger.LogInformation("Ping command requested");
-            _tunnel.Send($"pong {string.Join(' ', string.Join(' ', command, 1, command.Length - 1))}");
+            Headers headers = new();
+            headers.Method = "pong";
+            headers.StatusCode = "ok";
+            headers["command"] = string.Join(' ', command.Skip(1));
+            _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
         }
 
@@ -113,7 +147,13 @@ namespace Slacek.Server
             _logger.LogInformation("New user registration was successful");
             ISerializer<User> serializer = new UserSerializer();
             string payload = serializer.Serialize(_authenticatedUser);
-            _tunnel.Send($"{command[0]} ok {payload}");
+            Headers headers = new()
+            {
+                Method = command[0],
+                StatusCode = "ok"
+            };
+            headers["payload"] = payload;
+            _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
             OnNewUserInGroup(new NewUserInGroupEventArgs(AuthenticatedUser.Groups.First().GroupId, AuthenticatedUser));
         }
@@ -147,9 +187,16 @@ namespace Slacek.Server
             }
             _logger.LogInformation("User authentication was successful");
 
+            Headers headers = new()
+            {
+                Method = command[0],
+                StatusCode = "ok"
+            };
+
             ISerializer<User> serializer = new UserSerializer();
             string payload = serializer.Serialize(_authenticatedUser);
-            _tunnel.Send($"{command[0]} ok {payload}");
+            headers["payload"] = payload;
+            _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
         }
 
@@ -189,27 +236,32 @@ namespace Slacek.Server
             {
                 string errorMsg = $"Received Join command is not in a proper format. Expected {expectedLength} parts, received {command.Length}.";
                 _logger.LogError(errorMsg);
+                throw new Exception(errorMsg);
             }
-            string preamble = $"{command[0]} {command[1]}";
             if (_authenticatedUser is null)
             {
-                _logger.LogError("Received Join command from an unauthenticated user");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string errorMsg = "Received Join command from an unauthenticated user";
+                _logger.LogError(errorMsg);
+                throw new Exception(errorMsg);
             }
-
             byte[] bytes = Convert.FromBase64String(command[1]);
             string name = Encoding.UTF8.GetString(bytes);
             Group group = _databaseManager.JoinGroup(_authenticatedUser.UserId, name);
             if (group is null)
             {
-                _logger.LogError($"Group with name \"{command[1]}\" could not be found");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string errorMsg = $"Group with name \"{command[1]}\" could not be found";
+                _logger.LogError(errorMsg);
+                throw new Exception(errorMsg);
             }
             ISerializer<Group> serializer = new GroupSerializer();
             string payload = serializer.Serialize(group);
-            _tunnel.Send($"{preamble} {payload}");
+            Headers headers = new()
+            {
+                Method = command[0],
+                StatusCode = "ok"
+            };
+            headers["group"] = payload;
+            _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
             OnNewUserInGroup(new NewUserInGroupEventArgs(group.GroupId, _authenticatedUser));
         }
@@ -263,7 +315,14 @@ namespace Slacek.Server
                 string preamble = $"{command[0]} {command[1]}";
                 ISerializer<Group> serializer = new GroupSerializer();
                 string payload = serializer.Serialize(group);
-                _tunnel.Send($"{preamble} {payload}");
+                Headers headers = new()
+                {
+                    Method = command[0],
+                    StatusCode = "ok"
+                };
+                headers["resource"] = command[1];
+                headers["group"] = payload;
+                _tunnel.Send(headers.ToString());
                 _logger.LogInformation("Reply has been sent back");
             }
             catch (Exception e)
@@ -285,14 +344,21 @@ namespace Slacek.Server
             string preamble = $"{command[0]} {command[1]}";
             if (_authenticatedUser is null)
             {
-                _logger.LogError("Received GetGroups command from an unauthenticated user");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string msg = "Received GetGroups command from an unauthenticated user";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             ICollection<Group> groups = _databaseManager.GetUserGroups(_authenticatedUser.UserId);
             ISerializer<ICollection<Group>> serializer = new CollectionSerializer<Group>();
             string payload = serializer.Serialize(groups);
-            _tunnel.Send($"{preamble} {payload}");
+            Headers headers = new()
+            {
+                Method = command[0],
+                StatusCode = "ok"
+            };
+            headers["resource"] = command[1];
+            headers["payload"] = payload;
+            _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
         }
 
@@ -305,29 +371,36 @@ namespace Slacek.Server
                 string errorMsg = $"Received GetUsers command is not in a proper format. Expected {expectedLength} parts, received {command.Length}.";
                 _logger.LogError(errorMsg);
             }
-            string preamble = $"{command[0]} {command[1]} {command[2]}";
             if (_authenticatedUser is null)
             {
-                _logger.LogError("Received GetUsers command from an unauthenticated user");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string msg = "Received GetUsers command from an unauthenticated user";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             if (!int.TryParse(command[2], out int groupId))
             {
-                _logger.LogError($"Given ID \"{groupId}\" could not be parsed");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string msg = $"Given ID \"{groupId}\" could not be parsed";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             ICollection<User> users = _databaseManager.GetGroupUsers(groupId);
             if (users is null)
             {
-                _logger.LogError($"Group with ID \"{groupId}\" could not be found");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string msg = $"Group with ID \"{groupId}\" could not be found";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             ISerializer<ICollection<User>> serializer = new CollectionSerializer<User>();
             string payload = serializer.Serialize(users);
-            _tunnel.Send($"{preamble} {payload}");
+            Headers headers = new()
+            {
+                Method = command[0],
+                StatusCode = "ok"
+            };
+            headers["resource"] = command[1];
+            headers["group-id"] = command[2];
+            headers["payload"] = payload;
+            _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
         }
 
@@ -337,32 +410,41 @@ namespace Slacek.Server
             _logger.LogInformation("GetMessages command requested");
             if (command.Length != expectedLength)
             {
-                string errorMsg = $"Received GetMessages command is not in a proper format. Expected {expectedLength} parts, received {command.Length}.";
-                _logger.LogError(errorMsg);
+                string msg = $"Received GetMessages command is not in a proper format. Expected {expectedLength} parts, received {command.Length}.";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             string preamble = $"{command[0]} {command[1]} {command[2]}";
             if (_authenticatedUser is null)
             {
-                _logger.LogError("Received GetMessages command from an unauthenticated user");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string msg = "Received GetMessages command from an unauthenticated user";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             if (!int.TryParse(command[2], out int groupId))
             {
-                _logger.LogError($"Given ID \"{groupId}\" could not be parsed");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string msg = $"Given ID \"{groupId}\" could not be parsed";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             ICollection<Message> messages = _databaseManager.GetGroupMessages(groupId);
             if (messages is null)
             {
-                _logger.LogError($"Group with ID \"{groupId}\" could not be found");
-                _tunnel.Send($"{preamble} err");
-                return;
+                string msg = $"Group with ID \"{groupId}\" could not be found";
+                _logger.LogError(msg);
+                throw new Exception(msg);
             }
             ISerializer<ICollection<Message>> serializer = new CollectionSerializer<Message>();
             string payload = serializer.Serialize(messages);
-            _tunnel.Send($"{preamble} {payload}");
+            Headers headers = new()
+            {
+                Method = command[0],
+                StatusCode = "ok"
+            };
+            headers["resource"] = command[1];
+            headers["group-id"] = groupId.ToString();
+            headers["payload"] = payload;
+            _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
         }
 
@@ -436,7 +518,13 @@ namespace Slacek.Server
                     }
                     catch (Exception)
                     {
-                        _tunnel.Send($"{command[0]} err");
+
+                        Headers headers = new()
+                        {
+                            Method = command[0],
+                            StatusCode = "err"
+                        };
+                        _tunnel.Send(headers.ToString());
                     }
                 }
                 Thread.Sleep(100);
