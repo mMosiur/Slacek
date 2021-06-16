@@ -49,52 +49,35 @@ namespace Slacek.Server
 
         protected virtual void OnNewUserInGroup(NewUserInGroupEventArgs e) => NewUserInGroup?.Invoke(this, e);
 
-        private bool SendDialogMessage(string resource, string payload)
-        {
-            const int millisecondsWaitTime = 1000;
-            _tunnel.Send("alert");
-            _logger.LogInformation("Alert sent to client");
-            if(!_tunnel.Wait(millisecondsWaitTime)) return false;
-            string reply = _tunnel.Receive();
-            if(reply != "listening") return false;
-            _tunnel.Send(resource);
-            if(!_tunnel.Wait(millisecondsWaitTime)) return false;
-            reply = _tunnel.Receive();
-            if(reply != "accept") return false;
-            _tunnel.Send($"{payload}");
-            if(!_tunnel.Wait(millisecondsWaitTime)) return false;
-            reply = _tunnel.Receive();
-            return reply == "ok";
-        }
-
         public void ExternalNewMessage(Message message)
         {
-            string resource = "new message";
+            string resource = "message";
             ISerializer<Message> serializer = new MessageSerializer();
             string payload = serializer.Serialize(message);
-            if(SendDialogMessage(resource, payload))
+            Headers headers = new()
             {
-                _logger.LogInformation("Notification about new message sent");
-            }
-            else
-            {
-                _logger.LogError("An error occurred during in new message notification");
-            }
+                Method = "new",
+                StatusCode = "ok"
+            };
+            headers["resource"] = resource;
+            headers["message"] = payload;
+            _tunnel?.Send(headers.ToString());
         }
 
         public void ExternalNewUserInGroup(int groupId, User user)
         {
-            string resource = "new user";
+            string resource = "user";
             ISerializer<User> serializer = new UserSerializer();
-            string payload = $"{groupId} {serializer.Serialize(user)}";
-            if(SendDialogMessage(resource, payload))
+            string payload = serializer.Serialize(user);
+            Headers headers = new()
             {
-                _logger.LogInformation("Notification about new user sent");
-            }
-            else
-            {
-                _logger.LogError("An error occurred during in new user notification");
-            }
+                Method = "new",
+                StatusCode = "ok"
+            };
+            headers["resource"] = resource;
+            headers["group-id"] = groupId.ToString();
+            headers["user"] = payload;
+            _tunnel?.Send(headers.ToString());
         }
 
         public ConnectionService(CommunicationTunnel tunnel, DatabaseManager databaseManager, ILogger logger)
@@ -108,10 +91,15 @@ namespace Slacek.Server
         private void PingCommand(string[] command)
         {
             _logger.LogInformation("Ping command requested");
-            Headers headers = new();
-            headers.Method = "pong";
-            headers.StatusCode = "ok";
-            headers["command"] = string.Join(' ', command.Skip(1));
+            Headers headers = new()
+            {
+                Method = command[0],
+                StatusCode = "ok"
+            };
+            if(command.Length > 1)
+            {
+                headers["payload"] = string.Join(' ', command.Skip(1));
+            }
             _tunnel.Send(headers.ToString());
             _logger.LogInformation("Reply has been sent back");
         }
