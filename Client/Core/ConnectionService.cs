@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace Slacek.Client.Core
@@ -66,24 +67,21 @@ namespace Slacek.Client.Core
             }
         }
 
-        private void HandleNewMessage(string serialized_message)
+        private void HandleNotificationUser(string json)
         {
-            ISerializer<Message> serializer = new MessageSerializer();
-            Message newMessage = serializer.Deserialize(serialized_message);
-            OnNewMessageReceived(new NewMessageReceivedEventArgs(newMessage));
+            NewUserNotification notification = JsonSerializer.Deserialize<NewUserNotification>(json);
+            int groupId = notification.GroupId;
+            ISerializer<User> serializer = new UserSerializer();
+            User user = serializer.Deserialize(notification.SerializedUser);
+            OnNewUserInGroupReceived(new NewUserInGroupReceivedEventArgs(groupId, user));
         }
 
-        private void HandleNewUser(string data)
+        private void HandleNotificationMessage(string json)
         {
-            string[] parts = data.Split(' ');
-            if(parts.Length != 2) return;
-            if (!int.TryParse(parts[0], out int groupId))
-            {
-                throw new Exception($"Could not parse group ID: \"{parts[0]}\"");
-            }
-            ISerializer<User> serializer = new UserSerializer();
-            User user = serializer.Deserialize(parts[1]);
-            OnNewUserInGroupReceived(new NewUserInGroupReceivedEventArgs(groupId, user));
+            NewMessageNotification notification = JsonSerializer.Deserialize<NewMessageNotification>(json);
+            ISerializer<Message> serializer = new MessageSerializer();
+            Message message = serializer.Deserialize(notification.SerializedMessage);
+            OnNewMessageReceived(new NewMessageReceivedEventArgs(message));
         }
 
         private void HandleNewGroup(Headers headers)
@@ -116,8 +114,15 @@ namespace Slacek.Client.Core
 
         private void HandlePingReply(Headers headers)
         {
-            String response = headers["command"];
-            Console.WriteLine($"pong {response}");
+            bool hasPayload = headers.TryGetValue("payload", out string payload);
+            if(hasPayload)
+            {
+                Console.WriteLine($"{headers.Method} {payload}");
+            }
+            else
+            {
+                Console.WriteLine($"{headers.Method}");
+            }
         }
 
         private void HandleAuthenticateReply(Headers headers)
@@ -262,6 +267,26 @@ namespace Slacek.Client.Core
             }
         }
 
+        private void HandleNotification(string notification)
+        {
+            string[] parts = notification.Split("\r\n", 3);
+            if(parts.Length < 3)
+                return;
+            if(parts[0] != "notification")
+                return;
+            switch(parts[1])
+            {
+                case "message":
+                    HandleNotificationMessage(parts[2]);
+                    break;
+                case "user":
+                    HandleNotificationUser(parts[2]);
+                    break;
+                default:
+                    return;
+            }
+        }
+
         private void ReceiveAndHandleIfAvailable()
         {
             if (!_tunnel.Available)
@@ -269,55 +294,14 @@ namespace Slacek.Client.Core
                 return;
             }
             string message = _tunnel.Receive();
-            if(message == "alert")
+            if(message.StartsWith("notification"))
             {
-                HandleAlert();
+                HandleNotification(message);
             }
             else
             {
                 Headers headers = Headers.Parse(message);
                 HandleReply(headers);
-            }
-        }
-
-        public void HandleAlert()
-        {
-            const int millisecondsWaitTime = 1000;
-            _tunnel?.Send("listening");
-            if(!_tunnel?.Wait(millisecondsWaitTime) ?? false) return;
-            string message = _tunnel?.Receive() ?? "";
-            string[] messageLines = message.Split(' ');
-            if(messageLines.Length != 2)
-            {
-                _tunnel?.Send("reject");
-                return;
-            }
-            if(messageLines[0] == "new")
-            {
-                if(messageLines[1] == "message")
-                {
-                    _tunnel?.Send("accept");
-                    if(!_tunnel?.Wait(millisecondsWaitTime) ?? false) return;
-                    string messageSerialized = _tunnel?.Receive() ?? "";
-                    HandleNewMessage(messageSerialized);
-                    _tunnel?.Send("ok");
-                }
-                else if(messageLines[1] == "user")
-                {
-                    _tunnel?.Send("accept");
-                    if(!_tunnel?.Wait(millisecondsWaitTime) ?? false) return;
-                    string reply = _tunnel?.Receive();
-                    HandleNewUser(reply);
-                    _tunnel?.Send("ok");
-                }
-                else
-                {
-                    _tunnel?.Send("reject");
-                }
-            }
-            else
-            {
-                _tunnel?.Send("reject");
             }
         }
 
@@ -394,15 +378,15 @@ namespace Slacek.Client.Core
             return true;
         }
 
-        public void Ping(string message = null)
+        public void Ping(string payload = null)
         {
-            if (message is null)
+            if (payload is null)
             {
                 _tunnel?.Send("ping");
             }
             else
             {
-                _tunnel?.Send($"ping {message}");
+                _tunnel?.Send($"ping {payload}");
             }
         }
 

@@ -2,7 +2,16 @@
 
 Communication starts with cryptographic [handshake](#Handshake).
 
-Then all following communication is command-based.
+Then all following communication is command-based from client to server.
+Server replies take header-based structure.
+Header based structure:
+
+``` text
+method status\r\n
+key1: value1\r\n
+key2: valye2\r\n
+...
+```
 
 Available top-level commands:
 
@@ -46,7 +55,7 @@ in specified order.
 
 Serialized group consists of serialized:
 
-1. `Group.GroupId` (`Int32`)
+1. `Group.group-id` (`Int32`)
 2. `Group.Name` (`String`)
 
 in specified order.
@@ -55,7 +64,7 @@ in specified order.
 
 Serialized message consists of serialized:
 
-1. `Message.GroupId` (`Int32`)
+1. `Message.group-id` (`Int32`)
 2. `Message.UserId` (`Int32`)
 3. `Message.Content` (`String`)
 
@@ -78,15 +87,32 @@ Client can check wether server is live and responding using [ping command](#Ping
 
 ### Ping command
 
-Client sends:
+**Client sends:**
 
-1. `ping`
-2. `ping <message>` - where message is any text provided by client
+``` text
+ping
+```
 
-Server replies:
+or
 
-1. `pong`
-2. `pong <message>` - if message given in ping command, server returns it with pong
+``` text
+ping <payload>
+```
+
+**Server replies:**
+
+``` text
+ping ok\r\n
+```
+
+or
+
+``` text
+ping ok\r\n
+payload: <payload>\r\n
+```
+
+Depending on whether the payload was included.
 
 ## User authentication
 
@@ -97,33 +123,67 @@ Both sides keep track of currently authenticated user in given session.
 
 ### Register command
 
-Client sends:
+**Client sends:**
 
-- `register <login> <encoded_username> <encoded_password>` - where `<encoded_username>` is **string-encoded** username, and `<encoded_password>` is **string-encoded** password.
+``` text
+register <login> <encoded-username> <encoded-password>
+```
 
-Server replies:
+Where `<login>` is plain-text login, `<encoded-username>` is **string-encoded** username, and `<encoded-password>` is **string-encoded** password.
 
-- `register ok <serialized_user>` - where `<serialized_user>` is serialized authenticated user object.
-- `register err` - in case register command is not in proper format, registration was not successful or there is already user with given login or username.
+**Server replies:**
+
+If registration was successful:
+
+``` text
+register ok\r\n
+payload: <serialized-user>\r\n
+```
+
+Where `<serialized-user>` is serialized authenticated user object.
+
+Otherwise:
+
+``` text
+register err\r\n
+```
 
 After registration new user is automatically authenticated.
 
 ### Authenticate command
 
-Client sends:
+**Client sends:**
 
-- `authenticate <login> <encoded_password>` - where `<encoded_password>` is **string-encoded** password.
+``` text
+authenticate <login> <encoded-password>
+```
 
-Server replies:
+Where `<encoded-password>` is **string-encoded** password and `<login>` is plain text login.
 
-- `authenticate ok <serialized_user>` - where `<serialized_user>` is serialized authenticated user object.
-- `authenticate err` - in case command is not in proper format, authentication did not succeed or there was an database error.
+**Server replies:**
+
+If authentication was successful:
+
+``` text
+authenticate ok\r\n
+payload: <serialized-user>\r\n
+```
+
+Where `<serialized-user>` is serialized authenticated user object.
+
+Otherwise:
+
+``` text
+authenticate err\r\n
+```
 
 ### Unauthenticate command
 
-Client sends:
+**Client sends:**
 
-- `unauthenticate`
+``` text
+unauthenticate
+```
 
 Server does not reply.
 
@@ -141,36 +201,87 @@ Available `get` commands:
 
 ### Get groups command
 
-Client sends:
+**Client sends:**
 
-- `get groups`
+``` text
+get groups
+```
 
-Server replies:
+**Server replies:**
 
-- `get groups <serialized_groups>` - where `<serialized_groups>` is a serialized collection of groups currently authenticated user is a member of.
-- `get groups err` - when command is sent by an unauthenticated user.
+If request was processed successfully:
+
+``` text
+get ok\r\n
+resource: groups\r\n
+payload: <serialized-groups>\r\n
+```
+
+Where `<serialized-groups>` is a serialized collection of groups currently authenticated user is a member of.
+
+Otherwise:
+
+``` text
+get err\r\n
+```
 
 ### Get users command
 
-Client sends:
+**Client sends:**
 
-- `get users <groupId>` - where `<groupId>` is the ID of a group, for which user wants to get members of.
+``` text
+get users <group-id>
+```
 
-Server replies:
+Where `<group-id>` is the ID of a group, for which user wants to get members of.
 
-- `get users <groupId> <serialized_users>` - where `<serialized_users>` is a serialized collection of users in group with given `<groupId>`.
-- `get users <groupId> err` - in case if group with given `<groupId>` can't be found or the user is unauthenticated.
+**Server replies:**
+
+If request was processed successfully:
+
+``` text
+get ok\r\n
+resource: groups\r\n
+group-id: <group-id>\r\n
+payload: <serialized-users>\r\n
+```
+
+Where `<serialized-users>` is a serialized collection of users in group with given `<group-id>`.
+
+Otherwise:
+
+``` text
+get err\r\n
+```
 
 ### Get messages command
 
-Client sends:
+**Client sends:**
 
-- `get messages <groupId>` - where `<groupId>` is the ID of a group, for which user wants to get messages of
+``` text
+get messages <group-id>
+```
 
-Server replies:
+Where `<group-id>` is the ID of a group, for which user wants to get messages of
 
-- `get messages <groupId> <serialized_messages>` - where `<serialized_messages>` is a serialized collection of messages in group with given `<groupId>`.
-- `get messages <groupId> err` - in case if group with given `<groupId>` can't be found or the user is unauthenticated.
+**Server replies:**
+
+If request was processed successfully:
+
+``` text
+get ok\r\n
+resource: messages\r\n
+group-id: <group-id>\r\n
+payload: <serialized-messages>\r\n
+```
+
+Where `<serialized-messages>` is a serialized collection of messages in group with given `<group-id>`.
+
+Otherwise:
+
+``` text
+get err\r\n
+```
 
 ## New commands (sending data)
 
@@ -183,23 +294,43 @@ Available `new` commands:
 
 ### New message command
 
-Client sends:
+**Client sends:**
 
-- `new message <groupId> <encoded_content>` - where `<groupId`> is group identifier which is message destination, `<encoded_content>` is **string-encoded** message content.
+``` text
+new message <group-id> <encoded-content>
+```
+
+Where `<group-id`> is group identifier which is message destination, `<encoded-content>` is **string-encoded** message content.
 
 Server does not reply to sender, but triggers `NewMessageEvent`, which then distributes this new message to all other connected clients in the group of this message.
 
 ### New group command
 
-Client sends:
+**Client sends:**
 
-- `new group <encoded_name>` - where `<encoded_name>` is **string-encoded** name of the new group .
+``` text
+new group <encoded-name>
+```
 
-Server replies:
+Where `<encoded-name>` is **string-encoded** name of the new group .
 
-- `new group <serialized_group>` - where `<serialized_group>` is serialized created group object
+**Server replies:**
 
-- `new err` - if creating group was not successful
+If request was processed successfully:
+
+``` text
+new ok\e\n
+resource: group\r\n
+group: <serialized-group>\r\n
+```
+
+Where `<serialized-group>` is serialized created group object.
+
+Otherwise:
+
+``` text
+new err\r\n
+```
 
 ## Other
 
@@ -209,31 +340,87 @@ Miscellaneous command, as for [`joining`](#Join-command) a group.
 
 When client wants to join an existing group, he sends this command.
 
-Client sends:
+**Client sends:**
 
-- `join <encoded_name>` - where `<encoded_name>` is **string-encoded** name of the group to join.
+``` text
+join <encoded-name>
+```
 
-Server replies:
+Where `<encoded-name>` is **string-encoded** name of the group to join.
 
-- `join <encoded_name> <serialized_group>` - where `<encoded_name>` is the **string-encoded** name of the group and `<serialized_group>` is serialized group which has been joined.
-- `join <encoded_name> err` - where `<encoded_name>` is the **string-encoded** name of the group, when the group does not exists or the user is unauthenticated.
+**Server replies:**
+
+If request was processed successfully:
+
+``` text
+join ok\r\n
+group: <serialized-group>\r\n
+```
+
+Where `<serialized-group>` is serialized group which has been joined.
+
+Otherwise:
+
+``` text
+join err\r\n
+```
 
 ## Server notifications
 
 Most actions are initiated by the client, but occasionally server needs to notify clients too.
 
+The notification's structure is as follows:
+
+``` text
+notification\r\n
+<type>\r\n
+<json>\r\n
+```
+
+Where `<type>` is the type of notification, and `<json>` is notification content in the `json` format.
+Note, that that `<json>` does not need to be in one line, it can be multi-lined.
+
 ### Server-side new message notification
 
 Server redistributes a received message to all other clients in message's group by notifying them.
 
-Server sends:
+**Server sends:**
 
-- `new message <serialized_message>` - where `<serialized_message>` is serialized message.
+``` text
+notification\r\n
+message\r\n
+<json>\r\n
+```
+
+Where `<json>` contains:
+
+``` json
+{
+    "SerializedMessage": "<serialized-message>"
+}
+```
+
+Where `<serialized-message>` is the serialized message.
 
 ### Server-side new user notification
 
 Server notifies all users in a specific group when a new member joins that group.
 
-Server sends:
+**Server sends:**
 
-- `new user <groupId> <serialized_user>` - where `<groupId>` is the ID of the group, to which a new user has joined in and `<serialized_user>` is serialized user that has joined.
+``` text
+notification\r\n
+user\r\n
+<json>\r\n
+```
+
+Where `<json>` contains:
+
+``` json
+{
+    "GroupId": <group-id>,
+    "SerializedUser": "<serialized-user>"
+}
+```
+
+Where `<group-id>` is the ID of the group, to which a new user has joined in and `<serialized-user>` is serialized user that has joined.
