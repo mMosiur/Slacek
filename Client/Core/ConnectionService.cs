@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace Slacek.Client.Core
@@ -66,22 +67,21 @@ namespace Slacek.Client.Core
             }
         }
 
-        private void HandleNewMessage(Headers headers)
+        private void HandleNotificationUser(string json)
         {
-            ISerializer<Message> serializer = new MessageSerializer();
-            Message newMessage = serializer.Deserialize(headers["message"]);
-            OnNewMessageReceived(new NewMessageReceivedEventArgs(newMessage));
+            NewUserNotification notification = JsonSerializer.Deserialize<NewUserNotification>(json);
+            int groupId = notification.GroupId;
+            ISerializer<User> serializer = new UserSerializer();
+            User user = serializer.Deserialize(notification.SerializedUser);
+            OnNewUserInGroupReceived(new NewUserInGroupReceivedEventArgs(groupId, user));
         }
 
-        private void HandleNewUser(Headers headers)
+        private void HandleNotificationMessage(string json)
         {
-            if (!int.TryParse(headers["group-id"], out int groupId))
-            {
-                throw new Exception($"Could not parse group ID");
-            }
-            ISerializer<User> serializer = new UserSerializer();
-            User user = serializer.Deserialize(headers["user"]);
-            OnNewUserInGroupReceived(new NewUserInGroupReceivedEventArgs(groupId, user));
+            NewMessageNotification notification = JsonSerializer.Deserialize<NewMessageNotification>(json);
+            ISerializer<Message> serializer = new MessageSerializer();
+            Message message = serializer.Deserialize(notification.SerializedMessage);
+            OnNewMessageReceived(new NewMessageReceivedEventArgs(message));
         }
 
         private void HandleNewGroup(Headers headers)
@@ -105,14 +105,6 @@ namespace Slacek.Client.Core
             {
                 case "group":
                     HandleNewGroup(headers);
-                    break;
-
-                case "message":
-                    HandleNewMessage(headers);
-                    break;
-
-                case "user":
-                    HandleNewUser(headers);
                     break;
 
                 default:
@@ -275,6 +267,26 @@ namespace Slacek.Client.Core
             }
         }
 
+        private void HandleNotification(string notification)
+        {
+            string[] parts = notification.Split("\r\n", 3);
+            if(parts.Length < 3)
+                return;
+            if(parts[0] != "notification")
+                return;
+            switch(parts[1])
+            {
+                case "message":
+                    HandleNotificationMessage(parts[2]);
+                    break;
+                case "user":
+                    HandleNotificationUser(parts[2]);
+                    break;
+                default:
+                    return;
+            }
+        }
+
         private void ReceiveAndHandleIfAvailable()
         {
             if (!_tunnel.Available)
@@ -282,8 +294,15 @@ namespace Slacek.Client.Core
                 return;
             }
             string message = _tunnel.Receive();
-            Headers headers = Headers.Parse(message);
-            HandleReply(headers);
+            if(message.StartsWith("notification"))
+            {
+                HandleNotification(message);
+            }
+            else
+            {
+                Headers headers = Headers.Parse(message);
+                HandleReply(headers);
+            }
         }
 
         private void Listen()

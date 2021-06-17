@@ -369,31 +369,58 @@ join err\r\n
 
 Most actions are initiated by the client, but occasionally server needs to notify clients too.
 
+The notification's structure is as follows:
+
+``` text
+notification\r\n
+<type>\r\n
+<json>\r\n
+```
+
+Where `<type>` is the type of notification, and `<json>` is notification content in the `json` format.
+Note, that that `<json>` does not need to be in one line, it can be multi-lined.
+
 ### Server-side new message notification
 
 Server redistributes a received message to all other clients in message's group by notifying them.
 
-Server sends:
+**Server sends:**
 
 ``` text
-new ok\r\n
-resource: message\r\n
-message: <serialized-message>\r\n
+notification\r\n
+message\r\n
+<json>\r\n
 ```
 
-Where `<serialized-message>` is serialized message.
+Where `<json>` contains:
+
+``` json
+{
+    "SerializedMessage": "<serialized-message>"
+}
+```
+
+Where `<serialized-message>` is the serialized message.
 
 ### Server-side new user notification
 
 Server notifies all users in a specific group when a new member joins that group.
 
-Server sends:
+**Server sends:**
 
 ``` text
-new ok\r\n
-resource: user\r\n
-group-id: <group-id>\r\n
-user: <serialized-user>\r\n
+notification\r\n
+user\r\n
+<json>\r\n
+```
+
+Where `<json>` contains:
+
+``` json
+{
+    "GroupId": <group-id>,
+    "SerializedUser": "<serialized-user>"
+}
 ```
 
 Where `<group-id>` is the ID of the group, to which a new user has joined in and `<serialized-user>` is serialized user that has joined.

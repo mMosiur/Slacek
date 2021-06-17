@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace Slacek.Server
@@ -51,33 +52,27 @@ namespace Slacek.Server
 
         public void ExternalNewMessage(Message message)
         {
-            string resource = "message";
             ISerializer<Message> serializer = new MessageSerializer();
-            string payload = serializer.Serialize(message);
-            Headers headers = new()
+            string serializedMessage = serializer.Serialize(message);
+            NewMessageNotification notification = new()
             {
-                Method = "new",
-                StatusCode = "ok"
+                SerializedMessage = serializedMessage
             };
-            headers["resource"] = resource;
-            headers["message"] = payload;
-            _tunnel?.Send(headers.ToString());
+            string json = JsonSerializer.Serialize(notification);
+            _tunnel?.Send($"notification\r\nmessage\r\n{json}\r\n");
         }
 
         public void ExternalNewUserInGroup(int groupId, User user)
         {
-            string resource = "user";
             ISerializer<User> serializer = new UserSerializer();
-            string payload = serializer.Serialize(user);
-            Headers headers = new()
+            string serializedUser = serializer.Serialize(user);
+            NewUserNotification notification = new()
             {
-                Method = "new",
-                StatusCode = "ok"
+                GroupId = groupId,
+                SerializedUser = serializedUser
             };
-            headers["resource"] = resource;
-            headers["group-id"] = groupId.ToString();
-            headers["user"] = payload;
-            _tunnel?.Send(headers.ToString());
+            string json = JsonSerializer.Serialize(notification);
+            _tunnel?.Send($"notification\r\nuser\r\n{json}\r\n");
         }
 
         public ConnectionService(CommunicationTunnel tunnel, DatabaseManager databaseManager, ILogger logger)
